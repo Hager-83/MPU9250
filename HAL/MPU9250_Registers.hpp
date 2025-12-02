@@ -46,6 +46,7 @@
 #define ACCEL_FS_16G (0x18)
 
 
+
 // Gyro self test (reg 0 to 2) 
 #define SELF_TEST_X_GYRO 0x00                  
 #define SELF_TEST_Y_GYRO  0x01                                                                          
@@ -55,5 +56,10 @@
 #define SELF_TEST_X_ACCEL 0X0D
 #define SELF_TEST_Y_ACCEL 0x0E 
 #define SELF_TEST_Z_ACCEL 0x0F
+
+// 
+#define TEMP_OUT_H 0x41
+#define AK8963_DEFAULT_ADDRESS 0x0C
+#define AK8963_XOUT_L 0x03
 
 #endif // MPU9250_REGISTERS_HPP
