@@ -181,8 +181,6 @@ bool MPU9250_HAL::readTempRaw(int16_t &temp) {
 }
 
 bool MPU9250_HAL::initAK8963() {
-    // هنا ممكن تضعي الإعدادات الأساسية للماغنيتو AK8963
-    // على سبيل المثال تفعيل bypass mode في MPU9250
     if (!writeByte(INT_PIN_CFG, 0x22)) // BYPASS_EN
         return false;
     return true;
