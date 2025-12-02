@@ -43,7 +43,6 @@ int main() {
 
     printf("Initialization complete.\n\n");
 
-    // Loop
     const uint32_t loop_ms = 100; // 10Hz
 
     while (true) {
