@@ -7,7 +7,7 @@
 #include "hardware/i2c.h"
 
 class MPU9250_HAL {
-public:
+    public:
     MPU9250_HAL(i2c_inst_t* i2c = i2c0, uint8_t address = MPU6500_DEFAULT_ADDRESS);
 
     // initialize with I2C (baudrate in Hz)
@@ -24,8 +24,17 @@ public:
     // convenience: read both at once
     bool readAllRaw(int16_t &ax, int16_t &ay, int16_t &az,
                     int16_t &gx, int16_t &gy, int16_t &gz);
+                    // قراءة الحرارة الخام
+    bool readTempRaw(int16_t &temp);
 
-private:
+    // قراءة ماغنيتو خام
+    bool readMagRaw(int16_t &mx, int16_t &my, int16_t &mz);
+
+    // تهيئة المغنيتو (AK8963)
+    bool initAK8963();
+
+
+    private:
     i2c_inst_t* i2c_;
     uint8_t address_;
     bool i2c_configured_;
