@@ -4,7 +4,7 @@
 #include "hardware/i2c.h"
 
 #include "../HAL/MPU9250_HAL.hpp"
-#include "../Services/IMU_Service.hpp"
+#include "../Service/MPU9250_Service.hpp"
 
 int main() {
     stdio_init_all();
