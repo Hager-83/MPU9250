@@ -24,13 +24,10 @@ class MPU9250_HAL {
     // convenience: read both at once
     bool readAllRaw(int16_t &ax, int16_t &ay, int16_t &az,
                     int16_t &gx, int16_t &gy, int16_t &gz);
-                    // قراءة الحرارة الخام
+                    
     bool readTempRaw(int16_t &temp);
-
-    // قراءة ماغنيتو خام
     bool readMagRaw(int16_t &mx, int16_t &my, int16_t &mz);
 
-    // تهيئة المغنيتو (AK8963)
     bool initAK8963();
 
 
