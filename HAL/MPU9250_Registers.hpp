@@ -11,8 +11,10 @@
 #define GYRO_CONFIG     0x1B
 #define ACCEL_CONFIG    0x1C
 #define ACCEL_CONFIG2   0x1D
-#define INT_PIN_CFG     0x37
+
+#define INT_PIN_CFG     0x37 
 #define INT_ENABLE      0x38
+
 #define ACCEL_XOUT_H    0x3B
 #define ACCEL_XOUT_L    0x3C
 #define ACCEL_YOUT_H    0x3D
@@ -27,6 +29,7 @@
 #define GYRO_YOUT_L     0x46
 #define GYRO_ZOUT_H     0x47
 #define GYRO_ZOUT_L     0x48
+
 #define USER_CTRL       0x6A
 #define I2C_MST_CTRL    0x24
 #define I2C_SLV4_ADDR   0x31
@@ -45,20 +48,7 @@
 #define ACCEL_FS_8G  (0x10)
 #define ACCEL_FS_16G (0x18)
 
-
-
-// Gyro self test (reg 0 to 2) 
-#define SELF_TEST_X_GYRO 0x00                  
-#define SELF_TEST_Y_GYRO  0x01                                                                          
-#define SELF_TEST_Z_GYRO 0x02
-
-// Accel self test (reg 13 to 15)
-#define SELF_TEST_X_ACCEL 0X0D
-#define SELF_TEST_Y_ACCEL 0x0E 
-#define SELF_TEST_Z_ACCEL 0x0F
-
 // 
-#define TEMP_OUT_H 0x41
 #define AK8963_DEFAULT_ADDRESS 0x0C
 #define AK8963_XOUT_L 0x03
 
