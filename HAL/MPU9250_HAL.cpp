@@ -85,7 +85,7 @@ bool MPU9250_HAL::initMPU6500() {
     }
 
     // INT pin config: enable bypass to access magnetometer directly if needed
-    if(!writeByte(INT_PIN_CFG, 0x22))
+    if(!writeByte(INT_PIN_CFG, 0x02))
     {
         return false;
     }
@@ -181,21 +181,32 @@ bool MPU9250_HAL::readTempRaw(int16_t &temp) {
 }
 
 bool MPU9250_HAL::initAK8963() {
-    if (!writeByte(INT_PIN_CFG, 0x22)) // BYPASS_EN
+    if (!writeByte(INT_PIN_CFG, 0x02)) // BYPASS_EN
+    {
         return false;
+    }
     return true;
 }
 
 bool MPU9250_HAL::readMagRaw(int16_t &mx, int16_t &my, int16_t &mz) {
     uint8_t buf[6];
-    if (!i2c_configured_) return false;
+    if (!i2c_configured_)
+    {
+        return false;
+    }
 
     uint8_t reg = AK8963_XOUT_L;
     int ret = i2c_write_blocking(i2c_, AK8963_DEFAULT_ADDRESS, &reg, 1, true);
-    if (ret < 0) return false;
+    if (ret < 0)
+    {
+        return false;
+    }
 
     ret = i2c_read_blocking(i2c_, AK8963_DEFAULT_ADDRESS, buf, 6, false);
-    if (ret != 6) return false;
+    if (ret != 6) 
+    {
+        return false;
+    }
 
     mx = (int16_t)((buf[1] << 8) | buf[0]);
     my = (int16_t)((buf[3] << 8) | buf[2]);
