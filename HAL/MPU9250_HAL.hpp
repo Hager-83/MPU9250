@@ -6,30 +6,32 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 
-class MPU9250_HAL {
+class MPU9250_HAL 
+{
     public:
-    MPU9250_HAL(i2c_inst_t* i2c = i2c0, uint8_t address = MPU6500_DEFAULT_ADDRESS);
+    MPU9250_HAL(i2c_inst_t* i2c , uint8_t address);
 
     // initialize with I2C (baudrate in Hz)
-    bool begin(uint sda_pin, uint scl_pin, uint32_t baudrate_hz = 400000);
+    bool begin(uint sda_pin, uint scl_pin, uint32_t baudrate_hz);
 
     // Basic operations
     bool testConnection(); // reads WHO_AM_I
-    bool initMPU6500(); // reset + configure
+
+    bool initMPU9250(); // reset + configure
+
+    bool initAK8963();
 
     // Read raw sensors (blocking)
     bool readAccelRaw(int16_t &ax, int16_t &ay, int16_t &az);
     bool readGyroRaw(int16_t &gx, int16_t &gy, int16_t &gz);
+    bool readTempRaw(int16_t &temp);
 
     // convenience: read both at once
     bool readAllRaw(int16_t &ax, int16_t &ay, int16_t &az,
-                    int16_t &gx, int16_t &gy, int16_t &gz);
-                    
-    bool readTempRaw(int16_t &temp);
+                    int16_t &gx, int16_t &gy, int16_t &gz,
+                    int16_t &temp);
+
     bool readMagRaw(int16_t &mx, int16_t &my, int16_t &mz);
-
-    bool initAK8963();
-
 
     private:
     i2c_inst_t* i2c_;
