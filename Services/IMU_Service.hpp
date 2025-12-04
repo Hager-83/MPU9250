@@ -4,36 +4,43 @@
 #include "../HAL/MPU9250_HAL.hpp"
 #include <cstdint>
 
-struct AccelData {
+
+struct AccelData 
+{
     float x_g;
     float y_g;
     float z_g;
 };
 
-struct GyroData {
+struct GyroData 
+{
     float x_dps;
     float y_dps;
     float z_dps;
 };
 
-struct TempData {
+struct TempData 
+{
     float temperature_c;
 };
 
-struct MagData {
+struct MagData 
+{
     float x_uT;
     float y_uT;
     float z_uT;
 };
 
-struct IMUData {
+struct IMUData 
+{
     AccelData accel;
     GyroData gyro;
     TempData temp;
     MagData mag;
 };
 
-class IMUService {
+class IMUService 
+{
 public:
     IMUService(MPU9250_HAL &hal);
 
