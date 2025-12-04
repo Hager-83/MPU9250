@@ -5,14 +5,14 @@
 #define MPU6500_DEFAULT_ADDRESS 0x68
 
 #define WHO_AM_I        0x75
-#define PWR_MGMT_1      0x6B  //power mangement 
+#define PWR_MGMT_1      0x6B  
 #define SMPLRT_DIV      0x19
 #define CONFIG          0x1A
 #define GYRO_CONFIG     0x1B
 #define ACCEL_CONFIG    0x1C
 #define ACCEL_CONFIG2   0x1D
 
-#define INT_PIN_CFG     0x37 
+#define INT_PIN_CFG     0x37
 #define INT_ENABLE      0x38
 
 #define ACCEL_XOUT_H    0x3B
@@ -21,8 +21,10 @@
 #define ACCEL_YOUT_L    0x3E
 #define ACCEL_ZOUT_H    0x3F
 #define ACCEL_ZOUT_L    0x40
+
 #define TEMP_OUT_H      0x41
 #define TEMP_OUT_L      0x42
+
 #define GYRO_XOUT_H     0x43
 #define GYRO_XOUT_L     0x44
 #define GYRO_YOUT_H     0x45
@@ -35,7 +37,6 @@
 #define I2C_SLV4_ADDR   0x31
 #define I2C_SLV4_CTRL   0x34
 
-// Config options
 // Gyro full scale
 #define GYRO_FS_250  (0x00)
 #define GYRO_FS_500  (0x08)
@@ -48,7 +49,6 @@
 #define ACCEL_FS_8G  (0x10)
 #define ACCEL_FS_16G (0x18)
 
-// 
 #define AK8963_DEFAULT_ADDRESS 0x0C
 #define AK8963_XOUT_L 0x03
 
