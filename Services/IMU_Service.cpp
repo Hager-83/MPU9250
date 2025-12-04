@@ -1,64 +1,127 @@
-#ifndef IMU_SERVICE_HPP
-#define IMU_SERVICE_HPP
-
+#include "MPU9250_Service.hpp"
 #include "../HAL/MPU9250_HAL.hpp"
-#include <cstdint>
+#include <cmath>
+#include "pico/stdlib.h"
 
+IMUService::IMUService(MPU9250_HAL &hal)
+: hal_(hal),
+  //Physical_Value = Raw_Value × Scale_Factor
+  accelScale_(1.0f / 16384.0f),   // ±2g 
+  gyroScale_(1.0f / 131.0f),      // ±250 dps
+  magScale_(0.15f)                // AK8963 -> 0.15 µT/LSB (16-bit output)
+{}
 
-struct AccelData 
+bool IMUService::begin() 
 {
-    float x_g;
-    float y_g;
-    float z_g;
-};
+    if (!hal_.testConnection())
+        return false;
 
-struct GyroData 
+    if (!hal_.initMPU9250())
+        return false;
+
+    if (!hal_.initAK8963())       // initialize the magnetometer
+        return false;
+
+    return true;
+}
+
+AccelData IMUService::getAccelerometer() 
 {
-    float x_dps;
-    float y_dps;
-    float z_dps;
-};
+    int16_t ax, ay, az;
+    if (!hal_.readAccelRaw(ax, ay, az))
+        return {0, 0, 0};
 
-struct TempData 
+    return {
+        ax * accelScale_,
+        ay * accelScale_,
+        az * accelScale_
+    };
+}
+
+GyroData IMUService::getGyroscope()
 {
-    float temperature_c;
-};
+    int16_t gx, gy, gz;
+    if (!hal_.readGyroRaw(gx, gy, gz))
+        return {0, 0, 0};
 
-struct MagData 
+    return {
+        gx * gyroScale_,
+        gy * gyroScale_,
+        gz * gyroScale_
+    };
+}
+
+TempData IMUService::getTemperature() 
 {
-    float x_uT;
-    float y_uT;
-    float z_uT;
-};
+    int16_t tempRaw;
+    if (!hal_.readTempRaw(tempRaw))
+    {
+        return {0};
+    }
 
-struct IMUData 
+    float temp_c = (tempRaw / 333.87f) + 21.0f;
+    {
+        return { temp_c };
+    }
+}
+
+MagData IMUService::getMagnetometer() 
 {
-    AccelData accel;
-    GyroData gyro;
-    TempData temp;
-    MagData mag;
-};
+    int16_t mx, my, mz;
 
-class IMUService 
+    if (!hal_.readMagRaw(mx, my, mz))
+        return {0,0,0};
+
+    return {
+        mx * magScale_,   // µTesla
+        my * magScale_,
+        mz * magScale_
+    };
+}
+
+IMUData IMUService::getAll() 
 {
-public:
-    IMUService(MPU9250_HAL &hal);
+    int16_t ax, ay, az;
+    int16_t gx, gy, gz;
+    int16_t tempRaw;
+    //int16_t mx, my, mz;
 
-    bool begin();
+    //hal_.readAccelRaw(ax, ay, az);
+    //hal_.readGyroRaw(gx, gy, gz);
+    //hal_.readTempRaw(tempRaw);
+    //hal_.readMagRaw(mx, my, mz);
 
-    AccelData getAccelerometer();
-    GyroData  getGyroscope();
-    TempData  getTemperature();
-    MagData   getMagnetometer();
+    hal_.readAllRaw(ax,ay,az,
+                    gx,gy,gz,
+                    tempRaw);
 
-    IMUData   getAll();
+    IMUData data;
 
-private:
-    MPU9250_HAL &hal_;
+    data.accel= 
+    {
+        ax * accelScale_,
+        ay * accelScale_,
+        az * accelScale_
+    };
 
-    const float accelScale_; // LSB -> g
-    const float gyroScale_;  // LSB -> deg/s
-    const float magScale_;   // LSB -> µTesla (scaling from AK8963)
-};
+    data.gyro = 
+    {
+        gx * gyroScale_,
+        gy * gyroScale_,
+        gz * gyroScale_
+    };
 
-#endif // IMU_SERVICE_HPP
+    data.temp = 
+    {
+        (tempRaw / 333.87f) + 21.0f
+    };
+
+    /*data.mag = 
+    {
+        mx * magScale_,
+        my * magScale_,
+        mz * magScale_
+    };*/
+
+    return data;
+}
