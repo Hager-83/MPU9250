@@ -1,251 +1,192 @@
-#include "MPU9250_HAL.hpp"
-#include <cstring>
+/**
+ * @file : MPU9250_HAL.hpp
+ * @brief: Hardware Abstraction Layer (HAL) for the MPU9250 motion sensor.
+ * 
+ * This header defines the MPU9250_HAL class, providing a simple interface for
+ * communicating with the MPU9250 sensor (which includes an accelerometer, gyroscope,
+ * temperature sensor, and AK8963 magnetometer) via I2C on a Raspberry Pi Pico w.
+ * The class handles initialization, configuration, and raw data reading.
+ * 
+ * @author :[Sara Saad , Hager Shohieb]
+ * @version:1.0
+ * @date   :December 01, 2025
+ *
+ **/
 
-MPU9250_HAL::MPU9250_HAL(i2c_inst_t* i2c, uint8_t address)
-: i2c_(i2c), address_(address), i2c_configured_(false){ }
 
-bool MPU9250_HAL::begin(uint sda_pin, uint scl_pin, uint32_t baudrate_hz) 
+#ifndef MPU9250_HAL_HPP
+#define MPU9250_HAL_HPP
+
+/* ************************************** Include Part **************************************** */
+// edit c++ guid
+
+/* MPU9250_Registers.hpp: Register definitions*/
+#include "MPU9250_Registers.hpp"
+/* cstdint: Standard integer types.*/
+#include <cstdint>
+/* pico/stdlib.h: Pico SDK standard library */
+#include "pico/stdlib.h"
+/* hardware/i2c.h: Pico SDK I2C hardware interface.*/
+#include "hardware/i2c.h"
+/* ******************************************************************************************** */
+
+/**
+ * @class :MPU9250_HAL
+ * @brief :Hardware Abstraction Layer for MPU9250 sensor.
+ * 
+ * This class provides methods to initialize the I2C interface, test connection,
+ * configure the sensor, and read raw sensor data (accelerometer, gyroscope,
+ * temperature, and magnetometer). All read operations are blocking.
+ * 
+ */
+
+class MPU9250_HAL 
 {
-    // initialize stdio already assumed done in main
-    // Initialize I2C instance pins and baud
-    i2c_init(i2c_, baudrate_hz);
-    
-    gpio_set_function(sda_pin, GPIO_FUNC_I2C);
-    gpio_set_function(scl_pin, GPIO_FUNC_I2C);
-    gpio_pull_up(sda_pin);
-    gpio_pull_up(scl_pin);
-    i2c_configured_ = true;
-    // small delay
-    sleep_ms(10);
-    return testConnection();
-}
+    public:
+    /**
+     * @brie:Constructor for MPU9250_HAL.
+     * 
+     * Initializes the class with the I2C instance and device address.
+     * 
+     * @param i2c :Pointer to the I2C hardware instance (e.g., i2c0).
+     * @param address :I2C address of the MPU9250 (default: 0x68).
+     */
+    MPU9250_HAL(i2c_inst_t* i2c , uint8_t address); // hint 
 
-bool MPU9250_HAL::testConnection() 
-{
-    if(!i2c_configured_)
-    {
-        return false;
-    }
-    uint8_t who = readByte(WHO_AM_I);
-    // WHO_AM_I for MPU6500 typically 0x70 or 0x71 or 0x73 etc depending on part; accept non-zero
-    if((who == 70) || (who == 71) || (who == 73))
-    {
-        return (true);
-    }
-       
-}
+    /**
+     * @brief :Initialize I2C interface.
+     * 
+     * Configures the I2C pins and baudrate for communication with the sensor.
+     * Must be called before any other operations.
+     * 
+     * @param sda_pin :GPIO pin for SDA (data line).
+     * @param scl_pin :GPIO pin for SCL (clock line).
+     * @param baudrate_hz :I2C baudrate in Hz (e.g., 400000 for 400 kHz).
+     * @return :true if initialization succeeded, false otherwise.
+    */
+    bool begin(uint sda_pin, uint scl_pin, uint32_t baudrate_hz);
 
-bool MPU9250_HAL::initMPU9250() 
-{
-    if(!i2c_configured_)
-    {
-        return false;
-    }
-    // Reset device
-    //write 1 on bit 7
-    if(!writeByte(PWR_MGMT_1, 0x80)) 
-    {
-        return false;
-    }
-    sleep_ms(100);
+    /**
+     * @brief :Test connection to the MPU9250.
+     * 
+     * Reads the WHO_AM_I register (0x75) and verifies the device ID (expected: 0x71, 0x72, 0x73).
+     * 
+     * @return :true if connection is valid, false otherwise.
+     */
+    bool testConnection(); // edit is connected 
 
-    // Wake up and set clock source to PLL with X axis gyroscope reference
-    //write 1 on bit 0
-    if(!writeByte(PWR_MGMT_1, 0x01))
-    {
-        return false;
-    }
-    sleep_ms(50);
+    /**
+     * @brief I:nitialize and configure the MPU9250 sensor.
+     * 
+     * Performs a device reset, sets clock source, and enables basic sensor operation
+     * (e.g., via PWR_MGMT_1, SMPLRT_DIV, CONFIG, etc.).
+     * 
+     * @return t:rue if initialization succeeded, false otherwise.
+     */
+    bool initMPU9250(); // edit
 
-    // Disable I2C master (we use bypass), disable sleep mode important for magnometer
-    if(!writeByte(USER_CTRL, 0x00))
-    {
-        return false;
-    }
-    sleep_ms(10);
+    /**
+     * @brief :Initialize the AK8963 magnetometer.
+     * 
+     * Configures the magnetometer via I2C Master mode (e.g., using I2C_SLV4_ADDR).
+     * 
+     * @return t:rue if initialization succeeded, false otherwise.
+     */
+    bool initAK8963(); // but in private , or configuration file or configuration.yaml
 
-    // CONFIG: disable FSYNC, set DLPF (0) , enable LPS
-    if(!writeByte(CONFIG, 0x03)) 
-    {
-        return false; // set some DLPF
-    }
-    
-    // Set sample rate divider (SMPLRT_DIV)
-    if(!writeByte(SMPLRT_DIV, 0x04))
-    {
-        return false; // sample = gyro_rate/(1+4)
-    } 
+    /**
+     * @brief :Read raw accelerometer data.
+     * 
+     * Reads 16-bit signed values from ACCEL_XOUT_H/L, ACCEL_YOUT_H/L, ACCEL_ZOUT_H/L.
+     * 
+     * @param ax :Reference to store X-axis acceleration (raw).
+     * @param ay :Reference to store Y-axis acceleration (raw).
+     * @param az :Reference to store Z-axis acceleration (raw).
+     * @return   :true if read succeeded, false otherwise.
+     */
+    bool readAccelRaw(int16_t &ax, int16_t &ay, int16_t &az); // std_ optional in c++
 
-    // Set gyro full scale to 250 dps
-    if(!writeByte(GYRO_CONFIG, GYRO_FS_250))
-    {
-        return false;
-    }
+    /**
+     * @brief :Read raw gyroscope data.
+     * 
+     * Reads 16-bit signed values from GYRO_XOUT_H/L, GYRO_YOUT_H/L, GYRO_ZOUT_H/L.
+     * 
+     * @param gx :Reference to store X-axis gyro (raw).
+     * @param gy :Reference to store Y-axis gyro (raw).
+     * @param gz :Reference to store Z-axis gyro (raw).
+     * @return   :true if read succeeded, false otherwise.
+     */
 
-    // Set accel full scale to 2g
-    if(!writeByte(ACCEL_CONFIG, ACCEL_FS_2G)) 
-    {
-        return false;
-    }
+    bool readGyroRaw(int16_t &gx, int16_t &gy, int16_t &gz);
 
-    // ACCEL_CONFIG2: set DLPF for accel
-    if(!writeByte(ACCEL_CONFIG2, 0x03))
-    {
-        return false;
-    }
+    /**
+     * @brief :Read raw temperature data.
+     * 
+     * Reads 16-bit signed value from TEMP_OUT_H/L.
+     * 
+     * @param temp :Reference to store temperature (raw).
+     * @return :true if read succeeded, false otherwise.
+     */
+    bool readTempRaw(int16_t &temp);
 
-    // INT pin config: enable bypass to access magnetometer directly if needed
-    if(!writeByte(INT_PIN_CFG, 0x02))
-    {
-        return false;
-    }
+    /**
+     * @brief :Read all raw MPU9250 data at once (accelerometer, gyro, temperature).
+     * 
+     * Convenience method combining readAccelRaw, readGyroRaw, and readTempRaw.
+     * 
+     * @param ax :Reference to store X-axis acceleration (raw).
+     * @param ay :Reference to store Y-axis acceleration (raw).
+     * @param az :Reference to store Z-axis acceleration (raw).
+     * @param gx :Reference to store X-axis gyro (raw).
+     * @param gy :Reference to store Y-axis gyro (raw).
+     * @param gz :Reference to store Z-axis gyro (raw).
+     * @param temp :Reference to store temperature (raw).
+     * @return :true if read succeeded, false otherwise.
+     */
+    bool readAllRaw(int16_t &ax, int16_t &ay, int16_t &az,
+                    int16_t &gx, int16_t &gy, int16_t &gz,
+                    int16_t &temp);
 
-    // Enable data ready interrupt 
-    if(!writeByte(INT_ENABLE, 0x01))
-    {
-        return false;
-    }
+    /**
+     * @brief :Read raw magnetometer data from AK8963.
+     * 
+     * Reads 16-bit signed values from the AK8963 registers (e.g., XOUT_L).
+     * 
+     * @param mx :Reference to store X-axis magnetic field (raw).
+     * @param my :Reference to store Y-axis magnetic field (raw).
+     * @param mz :Reference to store Z-axis magnetic field (raw).
+     * @return :true if read succeeded, false otherwise.
+     */              
+    bool readMagRaw(int16_t &mx, int16_t &my, int16_t &mz);
 
-    sleep_ms(50);
+    private:
+    i2c_inst_t* i2c_ = NULL; // EDIT TO smart pointer
+    uint8_t address_;
+    bool i2c_configured_;
 
-    return true;
-}
+    /* ******************************** Helper Function ************************************ */
+    /**
+     * @brief :Write a single byte to a register.
+     * 
+     * Internal helper for I2C write operation.
+     * 
+     * @param reg :Register address.
+     * @param value :Value to write.
+     * @return :true if write succeeded, false otherwise.
+    * */
+    bool writeByte(uint8_t reg, uint8_t value);
 
-bool MPU9250_HAL::readBytes(uint8_t reg, uint8_t* buffer, size_t len)
- {
-    if(!i2c_configured_) 
-    {
-        return false;
-    }
+    /**
+     * @brief :Read multiple bytes from a register.
+     * 
+     * Internal helper for burst I2C read (e.g., 6 bytes for 3 axes).
+     * 
+     * @param reg :Starting register address.
+     * @param buffer :Buffer to store read data.
+     * @param len :Number of bytes to read.
+     * @return :true if read succeeded, false otherwise.
+    * */
+    bool readBytes(uint8_t reg, uint8_t* buffer, size_t len); // edit c++
+};
 
-    int ret = i2c_write_blocking(i2c_, address_, &reg, 1, true); // keep master control (no stop)
-    if (ret < 0)
-    {
-        return false;
-    }
-    int r = i2c_read_blocking(i2c_, address_, buffer, len, false);
-
-    return (r == (int)len);
-}
-
-bool MPU9250_HAL::writeByte(uint8_t reg, uint8_t value) {
-    if(!i2c_configured_)
-    {
-        return false;
-    }
-
-    uint8_t buf[2] = {reg, value};
-    int ret = i2c_write_blocking(i2c_, address_, buf, 2, false); // send with stop
-
-    return (ret == 2);
-}
-
-uint8_t MPU9250_HAL::readByte(uint8_t reg)
- {
-    uint8_t b = 0xFF;
-    readBytes(reg, &b, 1);
-
-    return b;
-}
-
-bool MPU9250_HAL::readAccelRaw(int16_t &ax, int16_t &ay, int16_t &az) 
-{
-    uint8_t buf[6];
-    if(!readBytes(ACCEL_XOUT_H, buf, 6)) 
-    {
-        return false;
-    }
-
-    ax = (int16_t)((buf[0] << 8) | buf[1]);
-    ay = (int16_t)((buf[2] << 8) | buf[3]);
-    az = (int16_t)((buf[4] << 8) | buf[5]);
-
-    return true;
-}
-
-bool MPU9250_HAL::readGyroRaw(int16_t &gx, int16_t &gy, int16_t &gz) 
-{
-    uint8_t buf[6];
-    if(!readBytes(GYRO_XOUT_H, buf, 6)) 
-    {
-        return false;
-    }
-
-    gx = (int16_t)((buf[0] << 8) | buf[1]);
-    gy = (int16_t)((buf[2] << 8) | buf[3]);
-    gz = (int16_t)((buf[4] << 8) | buf[5]);
-
-    return true;
-}
-
-bool MPU9250_HAL::readAllRaw(int16_t &ax, int16_t &ay, int16_t &az,
-                             int16_t &gx, int16_t &gy, int16_t &gz,
-                             int16_t &temp)
-{
-    // read 14 bytes ACCEL..TEMP..GYRO
-    uint8_t buf[14];
-    if(!readBytes(ACCEL_XOUT_H, buf, 14)) 
-    {
-        return false;
-    }
-
-    ax = (int16_t)((buf[0] << 8) | buf[1]);
-    ay = (int16_t)((buf[2] << 8) | buf[3]);
-    az = (int16_t)((buf[4] << 8) | buf[5]);
-
-    // buf[6..7] for temp
-    temp = (int16_t)((buf[6]<< 8) | buf[7]);
-
-    gx = (int16_t)((buf[8] << 8) | buf[9]);
-    gy = (int16_t)((buf[10] << 8) | buf[11]);
-    gz = (int16_t)((buf[12] << 8) | buf[13]);
-
-    return true;
-}
-
-bool MPU9250_HAL::readTempRaw(int16_t &temp) {
-    uint8_t buf[2];
-
-    if (!readBytes(TEMP_OUT_H, buf, 2))
-    {
-        return false;
-    }
-    temp = (int16_t)((buf[0] << 8) | buf[1]);
-
-    return true;
-}
-
-bool MPU9250_HAL::initAK8963() {
-    if (!writeByte(INT_PIN_CFG, 0x02)) // BYPASS_EN
-    {
-        return false;
-    }
-    return true;
-}
-
-bool MPU9250_HAL::readMagRaw(int16_t &mx, int16_t &my, int16_t &mz) {
-    uint8_t buf[6];
-    if (!i2c_configured_)
-    {
-        return false;
-    }
-
-    uint8_t reg = AK8963_XOUT_L;
-    int ret = i2c_write_blocking(i2c_, AK8963_DEFAULT_ADDRESS, &reg, 1, true);
-    if (ret < 0)
-    {
-        return false;
-    }
-
-    ret = i2c_read_blocking(i2c_, AK8963_DEFAULT_ADDRESS, buf, 6, false);
-    if (ret != 6) 
-    {
-        return false;
-    }
-
-    mx = (int16_t)((buf[1] << 8) | buf[0]);
-    my = (int16_t)((buf[3] << 8) | buf[2]);
-    mz = (int16_t)((buf[5] << 8) | buf[4]);
-
-    return true;
-}
+#endif // MPU9250_HAL_HPP
