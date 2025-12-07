@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <iostream>
 #include <cstdlib>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
@@ -14,77 +15,73 @@ int main()
 
     sleep_ms(200); // wait for USB serial
 
-    printf("Start Pico W MPU9250 Sensor... \n");
+    std::cout<<"Start Pico W MPU9250 Sensor... \n";
 
-    // HAL instance
-    MPU9250_HAL imu_hal(i2c_default, MPU6500_DEFAULT_ADDRESS);
-    IMUService imu_service(imu_hal);
+    // Edit common layer to hal, service with configuration file, 
+    MPU9250_HAL imu9250_hal(i2c_default, MPU6500_DEFAULT_ADDRESS);
+    IMUService imu9250(imu9250_hal);
 
+    //call try in try, catch 
     do
     {
-        if(imu_hal.begin(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, MPU9250_BAUD_RATE))
+        if(imu9250_hal.begin(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, MPU9250_BAUD_RATE))
         {
-            printf("MPU9250 Connected successfully^^\n");
+            std::cout<<"MPU9250 Connected successfully^^\n";
             break;
         } 
-        printf("MPU9250 Connected Failed!\n");
+        std::cout<<"MPU9250 Connected Failed!\n";
         sleep_ms(500);
     } while (1);
 
     do
     {
-        if(imu_hal.initMPU9250())
+        if(imu9250_hal.initMPU9250())
         {
-            printf("MPU9250 Init successfully^^\n");
+            std::cout<<"MPU9250 Init successfully^^\n";
             break;
         } 
-        printf("MPU9250 Configuration Failed!\n");
+        std::cout<<"MPU9250 Configuration Failed!\n";
         sleep_ms(500);
     } while (1);
 
+    /*
     do
     {
-        if(imu_hal.initAK8963())
+        if(imu9250_hal.initAK8963())
         {
-            printf("AK8963 Init successfully^^\n");
+            std::cout<<"AK8963 Init successfully^^\n";
             break;
         } 
         printf("AK8963 Configuration Failed!\n");
         sleep_ms(500);
     } while (1);
+    */
 
     do
     {
-        if(imu_service.begin())
+        if(imu9250.begin())
         {
-            printf("MPU9250 begin successfully^^\n");
+            std::cout<<"MPU9250 begin successfully^^\n";
             break;
         } 
-        printf("MPU9250 begin Failed!\n");
+        std::cout<<"MPU9250 begin Failed!\n";
         sleep_ms(500);
     } while (1);
 
-    printf("Initialization complete.\n\n");
+    std::cout<<"Initialization complete.\n\n";
 
     while (true)
     {
 
-        AccelData acc = imu_service.getAccelerometer();
-        GyroData  gyr = imu_service.getGyroscope();
-        TempData  tmp = imu_service.getTemperature();
+        AccelData acc = imu9250.getAccelerometer();
+        GyroData  gyr = imu9250.getGyroscope();
+        TempData  tmp = imu9250.getTemperature();
         //MagData   mag = imu.getMagnetometer();
 
-        printf(
-            "ACC(g):    %.3f  %.3f  %.3f | "
-            "GYR(dps):  %.2f  %.2f  %.2f | "
-            "TEMP(C):   %.2f  "
-            //"| MAG(uT): %.2f  %.2f  %.2f\n",
-            ,acc.x_g, acc.y_g, acc.z_g,
-            gyr.x_dps, gyr.y_dps, gyr.z_dps,
-            tmp.temperature_c
-            //mag.x_uT, mag.y_uT, mag.z_uT
-        );
 
+        std::cout<<"Acc(g): "<<acc.x_g<<"   "<<acc.y_g<<"   "<<acc.z_g<<std::endl;
+        std::cout<<"GYR(dPS)(g): "<<gyr.x_dps<<"   "<<gyr.y_dps<<"   "<<gyr.z_dps<<std::endl;
+        std::cout<<"TEMP(C): "<<tmp.temperature_c<<std::endl;
         sleep_ms(100);
     }
 
