@@ -1,140 +1,144 @@
-#include "MPU9250_Service.hpp"
-#include "../HAL/MPU9250_HAL.hpp"
-#include <cmath>
-#include "pico/stdlib.h"
 
-IMUService::IMUService(MPU9250_HAL &hal) // better to but in magic file 
-: hal_(hal),
+/******************************************** Include Part ********************************************* */
+#include "MPU9250_Service.hpp"
+#include <cmath>
+#include <stdio.h>
+#include <optional>
+#include "pico/stdlib.h"
+/****************************************************************************************************** */
+
+
+/****************************************** Function Definition *************************************** */
+
+IMUService::IMUService() 
+:hal_(nullptr),
   //Physical_Value = Raw_Value × Scale_Factor
   accelScale_(1.0f / 16384.0f),   
   gyroScale_(1.0f / 131.0f),      
   tempScale_(1.0f / 333.87f),     
-  magScale_(0.15f)                
-{}
+  magScale_(0.15f)
+{}         
+/****************************************************************************************************** */
 
-bool IMUService::begin() 
+IMUService::~IMUService()
 {
-    if (!hal_.testConnection())
+        if (hal_) delete hal_; 
+}
+/****************************************************************************************************** */
+
+bool IMUService::Begin()
+{
+    auto init_struct = MPU9250_Config::GetInitStruct();
+    hal_ = new MPU9250_HAL(&init_struct);
+    if (!(hal_->IsConnected().value_or(false)))
     {
-        return false;
+        printf("ERROR: MPU9250 not detected! Check wiring.\n");
+        return(false);
     }
 
-    if (!hal_.initMPU9250())
-    {
-        return false;
-    }
+    //mag_asa_ = hal_.GetMagAdjustment();
 
-    /*
-    if (!hal_.initAK8963())      
-    {
-        return false;
-    }
-    */  
-    
-
+    printf("MPU9250 initialized successfully by IMUService!\n");
     return true;
 }
+/****************************************************************************************************** */
 
-AccelData IMUService::getAccelerometer() 
+bool IMUService::IsConnected() const
 {
-    //Edit create struct 
-    int16_t ax, ay, az;
-
-    if (!hal_.readAccelRaw(ax, ay, az))
+    if (!hal_) 
     {
-        return {0, 0, 0};
+        return (false);
     }
-
-    return 
-    {
-        ax * accelScale_,
-        ay * accelScale_,
-        az * accelScale_
-    };
+    auto conn = (hal_->IsConnected());
+    return (conn.has_value() && conn.value());
 }
+/****************************************************************************************************** */
 
-GyroData IMUService::getGyroscope()
+void IMUService::GetAccelerometer(AccelerationData *Acc_data) 
 {
-    int16_t gx, gy, gz;
-    if (!hal_.readGyroRaw(gx, gy, gz))
+
+    if (!hal_->ReadAccelRaw(Acc_data))
     {
-        return {0, 0, 0};
+       Acc_data->ax = 0;
+       Acc_data->ay = 0;
+       Acc_data->az = 0;
     }
-
-    return 
+    else
     {
-        gx * gyroScale_,
-        gy * gyroScale_,
-        gz * gyroScale_
-    };
-}
-
-TempData IMUService::getTemperature() 
-{
-    int16_t tempRaw;
-    if (!hal_.readTempRaw(tempRaw))
-    {
-        return {0};
-    }
-
-    float temp_c = (tempRaw * tempScale_) + 21.0f;
-    {
-        return { temp_c };
+       Acc_data->ax *= accelScale_;
+       Acc_data->ay *= accelScale_;
+       Acc_data->az *= accelScale_;
     }
 }
+/****************************************************************************************************** */
 
-MagData IMUService::getMagnetometer() 
+void IMUService::GetGyroscope(GyroscopeData *gyro_data)
 {
-    int16_t mx, my, mz;
 
-    if (!hal_.readMagRaw(mx, my, mz))
-        return {0,0,0};
-
-    return {
-        mx * magScale_,   
-        my * magScale_,
-        mz * magScale_
+    if (!hal_->ReadGyroRaw(gyro_data))
+    {
+        gyro_data->gx = 0;
+        gyro_data->gy = 0;
+        gyro_data->gz = 0;
+    }
+    else
+    {
+        gyro_data->gx *= gyroScale_;
+        gyro_data->gy *= gyroScale_;
+        gyro_data->gz *= gyroScale_;
     };
 }
+/****************************************************************************************************** */
 
-IMUData IMUService::getAll() 
+void IMUService::GetTemperature(TemperatureData*temp_data) 
 {
-    int16_t ax, ay, az;
-    int16_t gx, gy, gz;
-    int16_t tempRaw;
-    //int16_t mx, my, mz;
-
-    hal_.readAllRaw(ax,ay,az,
-                    gx,gy,gz,
-                    tempRaw);
-
-    IMUData data;
-
-    data.accel= 
+    if (!hal_->ReadTempRaw(temp_data))
     {
-        ax * accelScale_,
-        ay * accelScale_,
-        az * accelScale_
-    };
-
-    data.gyro = 
+        temp_data->temperature_c = 0;
+    }
+    else
     {
-        gx * gyroScale_,
-        gy * gyroScale_,
-        gz * gyroScale_
-    };
-
-    data.temp = 
-    {
-        (tempRaw / 333.87f) + 21.0f
-    };
-
-    /*data.mag = 
-    {
-        mx * magScale_,
-        my * magScale_,
-        mz * magScale_
-    };*/
-
-    return data;
+        temp_data->temperature_c *= tempScale_ + 21.0f;
+    }
 }
+/****************************************************************************************************** */
+
+void IMUService::GetMagnetometer(MagnomaterData *meg_data) 
+{
+    if (!hal_->ReadMagRaw(meg_data))
+    {
+        meg_data ->mx = 0;
+        meg_data ->my = 0;
+        meg_data ->mz = 0;
+    }
+    else
+    {
+        meg_data ->mx *= magScale_;
+        meg_data ->my *= magScale_;
+        meg_data ->mz *= magScale_;
+    }
+}
+
+/****************************************************************************************************** */
+
+void IMUService::GetAll(IMUAllData *all_data) 
+{
+    if(!hal_->ReadAllRaw(all_data))
+    {
+        all_data->acc_obj  = {0,0,0};
+        all_data->gyro_obj = {0,0,0};
+        all_data->temp_obj = {0};
+        all_data->meg_data = {0,0,0};
+    }
+
+    all_data->acc_obj.ax *= accelScale_;
+    all_data->acc_obj.ay *= accelScale_;
+    all_data->acc_obj.az *= accelScale_;
+
+    all_data->gyro_obj.gx *= gyroScale_;
+    all_data->gyro_obj.gy *= gyroScale_;
+    all_data->gyro_obj.gz *= gyroScale_;
+
+    all_data->temp_obj.temperature_c *= tempScale_ + 21.0f;
+} 
+/****************************************************************************************************** */
