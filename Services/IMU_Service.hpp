@@ -57,6 +57,71 @@ class IMUService
      *************************************************************************/
     ~IMUService();
 
+    /*************************************************************************
+     * @brief Check whether the IMU sensor is currently connected.
+     * 
+     * Uses the internal HAL object to verify connectivity. Returns false if
+     * the HAL has not been initialized yet (i.e., begin() was not called).
+     * 
+     * @return true if the sensor is connected, false otherwise.
+     ***********************************************************************/
+    std::optional<bool> IsConnected() const;
+
+    /*****************************************************************************
+     * @brief :Get processed accelerometer data.
+     * 
+     * Reads raw accel data from HAL, applies scaling, and returns in g units.
+     * 
+     * @return :AccelData structure with scaled values.
+    ****************************************************************************/
+    std::optional<AccelerationData>  GetAccelerometer(void);
+
+    /****************************************************************************
+     * @brief Get processed gyroscope data.
+     * 
+     * Reads raw gyro data from HAL, applies scaling, and returns in dps.
+     * 
+     * @return GyroData structure with scaled values.
+     ***************************************************************************/
+    std::optional<GyroscopeData> GetGyroscope(void);
+
+    /***********************************************************************************
+     * @brief :Get processed temperature data.
+     * 
+     * Reads raw temp data from HAL and converts to °C.
+     * Formula: temp_c = (raw_temp / 333.87f) + 21.0f (example; adjust per datasheet).
+     * 
+     * @return :TempData structure with scaled value.
+     ***********************************************************************************/
+   std::optional<TemperatureData> GetTemperature(void);
+
+    /*************************************************************************************
+     * @brief :Get processed magnetometer data.
+     * 
+     * Reads raw mag data from AK8963 via HAL, applies scaling, and returns in µT.
+     * 
+     * @return :MagData structure with scaled values.
+     ************************************************************************************/
+   std::optional<MagnomaterData> GetMagnetometer(void);
+
+    /***********************************************************************************
+     * @brief :Get all processed IMU data at once.
+     * 
+     * Convenience method calling all getters and combining into IMUData.
+     * 
+     * @return :IMUData structure with all scaled values.
+     ***********************************************************************************/
+    std::optional<IMUAllData> GetAll(void);
+
+private:
+    MPU9250_HAL* hal_;
+    MPU9250_HAL::MagAdjustment mag_asa_;
+
+    const float accelScale_; 
+    const float gyroScale_; 
+    const float magScale_;   
+    const float tempScale_;
+
     /**************************************************************************
      * @brief Initialize the IMU service and create the HAL instance.
      * 
@@ -67,72 +132,7 @@ class IMUService
      * @return true if the sensor was detected and initialized successfully,
      *         false otherwise.
      *************************************************************************/
-    bool Begin();
-
-    /*************************************************************************
-     * @brief Check whether the IMU sensor is currently connected.
-     * 
-     * Uses the internal HAL object to verify connectivity. Returns false if
-     * the HAL has not been initialized yet (i.e., begin() was not called).
-     * 
-     * @return true if the sensor is connected, false otherwise.
-     ***********************************************************************/
-    bool IsConnected() const;
-
-    /*****************************************************************************
-     * @brief :Get processed accelerometer data.
-     * 
-     * Reads raw accel data from HAL, applies scaling, and returns in g units.
-     * 
-     * @return :AccelData structure with scaled values.
-    ****************************************************************************/
-    void GetAccelerometer(AccelerationData *Acc_data);
-
-    /****************************************************************************
-     * @brief Get processed gyroscope data.
-     * 
-     * Reads raw gyro data from HAL, applies scaling, and returns in dps.
-     * 
-     * @return GyroData structure with scaled values.
-     ***************************************************************************/
-    void GetGyroscope(GyroscopeData *gyro_data);
-
-    /***********************************************************************************
-     * @brief :Get processed temperature data.
-     * 
-     * Reads raw temp data from HAL and converts to °C.
-     * Formula: temp_c = (raw_temp / 333.87f) + 21.0f (example; adjust per datasheet).
-     * 
-     * @return :TempData structure with scaled value.
-     ***********************************************************************************/
-    void GetTemperature(TemperatureData *temp_data);
-
-    /*************************************************************************************
-     * @brief :Get processed magnetometer data.
-     * 
-     * Reads raw mag data from AK8963 via HAL, applies scaling, and returns in µT.
-     * 
-     * @return :MagData structure with scaled values.
-     ************************************************************************************/
-    void  GetMagnetometer(MagnomaterData* meg_data);
-
-    /***********************************************************************************
-     * @brief :Get all processed IMU data at once.
-     * 
-     * Convenience method calling all getters and combining into IMUData.
-     * 
-     * @return :IMUData structure with all scaled values.
-     ***********************************************************************************/
-    void GetAll(IMUAllData *all_data);
-
-private:
-    MPU9250_HAL* hal_;
-    MPU9250_HAL::MagAdjustment mag_asa_;
-
-    const float accelScale_; 
-    const float gyroScale_; 
-    const float magScale_;   
-    const float tempScale_;
+    std::optional<bool> Begin();
 };
 
 /****************************************************************************************************** */
