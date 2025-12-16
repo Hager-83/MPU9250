@@ -114,8 +114,7 @@ class MPU9250_HAL
      * @param az :Reference to store Z-axis acceleration (raw).
      * @return   :true if read succeeded, false otherwise.
      ************************************************************************************/
-    std::optional<bool>  ReadAccelRaw(AccelerationData * acc_data); 
-
+    std::optional<AccelerationData> ReadAccelRaw(void);
 
     /********************************************************************************
      * @brief :Read raw gyroscope data.
@@ -127,7 +126,7 @@ class MPU9250_HAL
      * @param gz :Reference to store Z-axis gyro (raw).
      * @return   :true if read succeeded, false otherwise.
      *********************************************************************************/
-    std::optional<bool> ReadGyroRaw(GyroscopeData *gyro_data);
+    std::optional<GyroscopeData> ReadGyroRaw(void);
 
 
     /*********************************************************
@@ -138,7 +137,7 @@ class MPU9250_HAL
      * @param temp :Reference to store temperature (raw).
      * @return :true if read succeeded, false otherwise.
      *********************************************************/
-    std::optional<bool> ReadTempRaw(TemperatureData*temp_data);
+    std::optional<TemperatureData> ReadTempRaw(void);
 
 
     /************************************************************************
@@ -153,7 +152,7 @@ class MPU9250_HAL
      ***********************************************************************/ 
 
 
-    std::optional<bool> ReadMagRaw(MagnomaterData *meg_data);
+    std::optional<MagnomaterData> ReadMagRaw(void);
     /**
      * @brief :Read all raw MPU9250 data at once (accelerometer, gyro, temperature).
      * 
@@ -168,7 +167,7 @@ class MPU9250_HAL
      * @param temp :Reference to store temperature (raw).
      * @return :true if read succeeded, false otherwise.
      */
-    std::optional<bool> ReadAllRaw(IMUAllData *all_data);
+    std::optional<IMUAllData > ReadAllRaw(void);
 
 
     private:
@@ -235,7 +234,7 @@ class MPU9250_HAL
      * @param len :Number of bytes to read.
      * @return :true if read succeeded, false otherwise.
      ********************************************************************/
-    std::optional<bool> ReadBytes(uint8_t reg, uint8_t* buffer, size_t len); 
+    std::optional<bool> ReadBytes(uint8_t reg, uint8_t* buffer,size_t len); 
 
     /****************************************************************************
      * @brief Reads multiple bytes from the AK8963 magnetometer through I2C.
@@ -247,7 +246,7 @@ class MPU9250_HAL
      * @return true  → Read success  
      * @return false → I2C write/read error  
      ******************************************************************************/
-    std::optional<bool> ReadBytesAK8963(uint8_t reg, uint8_t* buf, size_t len);
+    std::optional<bool> ReadBytesAK8963(uint8_t reg, uint8_t* buffer,size_t len);
 
     /****************************************************************************
      * @brief :Write a single byte to AK8963 register.
