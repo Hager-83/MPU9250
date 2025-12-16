@@ -4,7 +4,7 @@
 /****************************************************************************/
 /* cmath: Standard integer types.*/
 #include <cmath>
-
+#include <optional>
 /****************************************************************************
      * @struct: ReadAccData
      * @brief : Structure holding raw or processed accelerometer data from MPU9250.
@@ -101,10 +101,10 @@
      ***************************************************************************/
     struct IMUAllData
     {
-        AccelerationData acc_obj;
-        GyroscopeData gyro_obj;
-        TemperatureData temp_obj;
-        MagnomaterData meg_data;
+        std::optional<AccelerationData> acc_obj;
+        std::optional<GyroscopeData> gyro_obj;
+        std::optional<TemperatureData> temp_obj;
+        std::optional<MagnomaterData> meg_data;
     };
     
 #endif /*_MPU9250_DATA_HPP_*/
