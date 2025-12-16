@@ -3,15 +3,13 @@
 #include <cstring>
 #include <stdexcept>
 
-using namespace std;
-
 /*********************************************** Class Defenition ******************************************** */
 MPU9250_HAL::MPU9250_HAL(MPU9250Initilize *init)
 {
     init_ = *init;
-    this->Begin();
-    this->InitMPU9250();
-    this->InitAK8963();
+    if(!Begin().value_or(false)) return;
+    if(!InitMPU9250().value_or(false)) return;
+    if(!InitAK8963().value_or(false)) return;
 }
 
 /************************************************************************************************************** */
@@ -31,7 +29,7 @@ std::optional<bool> MPU9250_HAL::IsConnected()
     }
 
     /* WHO_AM_I for MPU6500 typically 0x70 or 0x71 or 0x73 etc depending on part; accept non-zero */
-    if((who != 70) && (who != 71) && (who != 73)) 
+    if((who != 0x70) && (who != 0x71) && (who != 0x73))
     {
         return (std::nullopt);
     }
@@ -40,94 +38,96 @@ std::optional<bool> MPU9250_HAL::IsConnected()
 }
 
 /************************************************************************************************************ */
-std::optional<bool> MPU9250_HAL::ReadAccelRaw(AccelerationData * acc_data) 
+std::optional<AccelerationData > MPU9250_HAL::ReadAccelRaw(void) 
 {
     uint8_t buf[6];
+    AccelerationData acc_data;
     if(!ReadBytes(ACCEL_XOUT_H, buf, 6)) 
     {
         return (std::nullopt);
     }
 
-    acc_data-> ax = ((buf[0] << 8) | buf[1]);
-    acc_data-> ay = ((buf[2] << 8) | buf[3]);
-    acc_data-> az = ((buf[4] << 8) | buf[5]);
+    acc_data.ax = (int16_t)((buf[0] << 8) | buf[1]);
+    acc_data. ay = (int16_t)((buf[2] << 8) | buf[3]);
+    acc_data. az = (int16_t)((buf[4] << 8) | buf[5]);
 
-    return (true);
+    return (acc_data);
 }
 
 /************************************************************************************************************ */
-std::optional<bool> MPU9250_HAL::ReadGyroRaw(GyroscopeData*gyro_data) 
+std::optional<GyroscopeData> MPU9250_HAL::ReadGyroRaw(void) 
 {
     uint8_t buf[6];
+    GyroscopeData gyro_data;
     if(!ReadBytes(GYRO_XOUT_H, buf, 6)) 
     {
         return (std::nullopt);
     }
 
-    gyro_data->gx = ((buf[0] << 8) | buf[1]);
-    gyro_data->gy = ((buf[2] << 8) | buf[3]);
-    gyro_data->gz = ((buf[4] << 8) | buf[5]);
+    gyro_data.gx = (int16_t)((buf[0] << 8) | buf[1]);
+    gyro_data.gy = (int16_t)((buf[2] << 8) | buf[3]);
+    gyro_data.gz = (int16_t)((buf[4] << 8) | buf[5]);
 
-    return (true);
+    return (gyro_data);
 }
 
 /************************************************************************************************************ */
-std::optional<bool> MPU9250_HAL::ReadTempRaw(TemperatureData *temp_data) 
+std::optional<TemperatureData > MPU9250_HAL::ReadTempRaw(void) 
 {
     uint8_t buf[2];
+    TemperatureData temp_data;
 
     if (!ReadBytes(TEMP_OUT_H, buf, 2))
     {
         return (std::nullopt);
     }
-    temp_data->temperature_c = ((buf[0] << 8) | buf[1]);
+    temp_data.temperature_c = (int16_t)((buf[0] << 8) | buf[1]);
 
-    return (true);
+    return (temp_data);
 }
 
 /*********************************************************************************************************** */
-std::optional<bool> MPU9250_HAL::ReadMagRaw(MagnomaterData *meg_data) 
+std::optional<MagnomaterData> MPU9250_HAL::ReadMagRaw(void) 
 {
     uint8_t buf[7];
+    MagnomaterData meg_data;
 
     if(!ReadBytesAK8963(AK8963_XOUT_L, buf, 7))
     {
         return std::nullopt;
-    }
 
+    }
     if (buf[6] & 0x08)
     {
         return std::nullopt;
     }
 
-    meg_data->mx = (int16_t)((buf[1] << 8) | buf[0]);
-    meg_data->my = (int16_t)((buf[3] << 8) | buf[2]);
-    meg_data->mz = (int16_t)((buf[5] << 8) | buf[4]);
+    meg_data.mx = (int16_t)((buf[1] << 8) | buf[0]);
+    meg_data.my = (int16_t)((buf[3] << 8) | buf[2]);
+    meg_data.mz = (int16_t)((buf[5] << 8) | buf[4]);
 
-    return true;
+    return (meg_data);
 }
 
 /************************************************************************************************************ */
-std::optional<bool> MPU9250_HAL::ReadAllRaw(IMUAllData *all_data)
+std::optional<IMUAllData> MPU9250_HAL::ReadAllRaw(void)
 {
-    bool flag = true;
+    IMUAllData all_data;
 
-    auto acc  = ReadAccelRaw(&(all_data->acc_obj));
-    auto gyro = ReadGyroRaw(&(all_data->gyro_obj));
-    auto temp = ReadTempRaw(&(all_data->temp_obj));
-    auto mag  = ReadMagRaw(&(all_data->meg_data));
+    all_data.acc_obj  = ReadAccelRaw();
+    all_data.gyro_obj = ReadGyroRaw();
+    all_data.temp_obj = ReadTempRaw();
+    all_data.meg_data = ReadMagRaw();
 
-    flag &= (acc.has_value() && acc.value());
-    flag &= (gyro.has_value() && gyro.value());
-    flag &= (temp.has_value() && temp.value());
-    flag &= (mag.has_value() && mag.value());
-
-    if(!flag)
+    if (!all_data.acc_obj.has_value()  ||
+        !all_data.gyro_obj.has_value() ||
+        !all_data.temp_obj.has_value() ||
+        !all_data.meg_data.has_value())
     {
-        return (std::nullopt);
+        return std::nullopt;
     }
         
-    return (true);
+    return (all_data);
 }
 
 /************************************************************************************************************** */
@@ -271,7 +271,7 @@ std::optional<bool> MPU9250_HAL::ReadBytes(uint8_t reg, uint8_t* buffer, size_t 
         return (std::nullopt);
     }
     int r = i2c_read_blocking(init_.i2c.get(),init_.address, buffer, len, false);
-    if (ret != (int)len)
+    if (r!= (int)len)
     {
         return (std::nullopt);
     }
