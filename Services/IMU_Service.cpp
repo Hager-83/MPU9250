@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <optional>
 #include "pico/stdlib.h"
-/****************************************************************************************************** */
-
 
 /****************************************** Function Definition *************************************** */
 
@@ -17,7 +15,15 @@ IMUService::IMUService()
   gyroScale_(1.0f / 131.0f),      
   tempScale_(1.0f / 333.87f),     
   magScale_(0.15f)
-{}         
+{
+    if (!(this->Begin())) 
+    {
+        while (true) 
+        {
+            tight_loop_contents(); 
+        }  
+    }
+}         
 /****************************************************************************************************** */
 
 IMUService::~IMUService()
@@ -26,119 +32,126 @@ IMUService::~IMUService()
 }
 /****************************************************************************************************** */
 
-bool IMUService::Begin()
+std::optional<bool> IMUService::IsConnected() const
 {
-    auto init_struct = MPU9250_Config::GetInitStruct();
-    hal_ = new MPU9250_HAL(&init_struct);
-    if (!(hal_->IsConnected().value_or(false)))
-    {
-        printf("ERROR: MPU9250 not detected! Check wiring.\n");
-        return(false);
-    }
-
-    //mag_asa_ = hal_.GetMagAdjustment();
-
-    printf("MPU9250 initialized successfully by IMUService!\n");
-    return true;
-}
-/****************************************************************************************************** */
-
-bool IMUService::IsConnected() const
-{
-    if (!hal_) 
-    {
-        return (false);
-    }
     auto conn = (hal_->IsConnected());
-    return (conn.has_value() && conn.value());
-}
-/****************************************************************************************************** */
-
-void IMUService::GetAccelerometer(AccelerationData *Acc_data) 
-{
-
-    if (!hal_->ReadAccelRaw(Acc_data))
+    if (!conn.has_value()) 
     {
-       Acc_data->ax = 0;
-       Acc_data->ay = 0;
-       Acc_data->az = 0;
+        return (std::nullopt);
     }
     else
     {
-       Acc_data->ax *= accelScale_;
-       Acc_data->ay *= accelScale_;
-       Acc_data->az *= accelScale_;
+        return (conn.value());
     }
 }
 /****************************************************************************************************** */
 
-void IMUService::GetGyroscope(GyroscopeData *gyro_data)
+std::optional<AccelerationData> IMUService::GetAccelerometer(void) 
 {
-
-    if (!hal_->ReadGyroRaw(gyro_data))
+    auto Acc_data = hal_->ReadAccelRaw();
+    if (!Acc_data.has_value())
     {
-        gyro_data->gx = 0;
-        gyro_data->gy = 0;
-        gyro_data->gz = 0;
+       return(std::nullopt);
+    }
+    else
+    {
+        Acc_data->ax *= accelScale_;
+        Acc_data->ay *= accelScale_;
+        Acc_data->az *= accelScale_;
+        return(Acc_data);
+    }
+    
+}
+/****************************************************************************************************** */
+
+std::optional<GyroscopeData>  IMUService::GetGyroscope(void)
+{
+    auto gyro_data = hal_->ReadGyroRaw();
+    if (!gyro_data.has_value())
+    {
+         return(std::nullopt);
     }
     else
     {
         gyro_data->gx *= gyroScale_;
         gyro_data->gy *= gyroScale_;
         gyro_data->gz *= gyroScale_;
+        return(gyro_data);
     };
 }
 /****************************************************************************************************** */
 
-void IMUService::GetTemperature(TemperatureData*temp_data) 
+std::optional<TemperatureData> IMUService::GetTemperature(void) 
 {
-    if (!hal_->ReadTempRaw(temp_data))
+    auto temp_data = hal_->ReadTempRaw();
+    if (!temp_data.has_value())
     {
-        temp_data->temperature_c = 0;
+        return(std::nullopt);
     }
     else
     {
-        temp_data->temperature_c *= tempScale_ + 21.0f;
+        temp_data->temperature_c = (temp_data->temperature_c * tempScale_) + 21.0f;
+        return(temp_data);
     }
 }
 /****************************************************************************************************** */
 
-void IMUService::GetMagnetometer(MagnomaterData *meg_data) 
+std::optional<MagnomaterData> IMUService::GetMagnetometer(void) 
 {
-    if (!hal_->ReadMagRaw(meg_data))
+    auto meg_data = hal_->ReadMagRaw();
+    if (!meg_data.has_value())
     {
-        meg_data ->mx = 0;
-        meg_data ->my = 0;
-        meg_data ->mz = 0;
+        return(std::nullopt);
     }
     else
     {
         meg_data ->mx *= magScale_;
         meg_data ->my *= magScale_;
         meg_data ->mz *= magScale_;
+        return(meg_data);
     }
 }
 
 /****************************************************************************************************** */
 
-void IMUService::GetAll(IMUAllData *all_data) 
+std::optional<IMUAllData> IMUService::GetAll(void) 
 {
-    if(!hal_->ReadAllRaw(all_data))
+    auto all_data = hal_->ReadAllRaw();
+    if(!all_data.has_value())
     {
-        all_data->acc_obj  = {0,0,0};
-        all_data->gyro_obj = {0,0,0};
-        all_data->temp_obj = {0};
-        all_data->meg_data = {0,0,0};
+       return(std::nullopt);
     }
 
-    all_data->acc_obj.ax *= accelScale_;
-    all_data->acc_obj.ay *= accelScale_;
-    all_data->acc_obj.az *= accelScale_;
+    all_data->acc_obj->ax *= accelScale_;
+    all_data->acc_obj->ay *= accelScale_;
+    all_data->acc_obj->az *= accelScale_;
 
-    all_data->gyro_obj.gx *= gyroScale_;
-    all_data->gyro_obj.gy *= gyroScale_;
-    all_data->gyro_obj.gz *= gyroScale_;
+    all_data->gyro_obj->gx *= gyroScale_;
+    all_data->gyro_obj->gy *= gyroScale_;
+    all_data->gyro_obj->gz *= gyroScale_;
 
-    all_data->temp_obj.temperature_c *= tempScale_ + 21.0f;
+    all_data->meg_data->mx *= magScale_;
+    all_data->meg_data->my *= magScale_;
+    all_data->meg_data->mz *= magScale_;
+
+
+    all_data->temp_obj->temperature_c *= tempScale_ + 21.0f;
+    return(all_data);
 } 
+
+/****************************************************************************************************** */
+std::optional<bool> IMUService::Begin()
+{
+    auto init_struct = MPU9250_Config::GetInitStruct();
+    hal_ = new MPU9250_HAL(&init_struct);
+    if (!(hal_->IsConnected().value_or(false)))
+    {
+        printf("ERROR: MPU9250 not detected! Check wiring.\n");
+        return(std::nullopt);
+    }
+
+    printf("MPU9250 initialized successfully by IMUService!\n");
+    return true;
+}
+
 /****************************************************************************************************** */
