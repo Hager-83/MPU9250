@@ -134,8 +134,8 @@ std::optional<IMUAllData> IMUService::GetAll(void)
     all_data->meg_data->my *= magScale_;
     all_data->meg_data->mz *= magScale_;
 
-
-    all_data->temp_obj->temperature_c *= tempScale_ + 21.0f;
+    all_data->temp_obj->temperature_c = (all_data->temp_obj->temperature_c * tempScale_) + 21.0f;
+    //all_data->temp_obj->temperature_c *= tempScale_ + 21.0f;
     return(all_data);
 } 
 
